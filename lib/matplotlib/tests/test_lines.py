@@ -385,6 +385,90 @@ def test_input_copy(fig_test, fig_ref):
     fig_ref.add_subplot().plot([0, 2, 4], [0, 2, 4], ".-", drawstyle="steps")
 
 
+@pytest.mark.parametrize("copy_data", [True, False])
+def test_input_copy_with_copy_data_param(copy_data):
+    """
+    Test that lines.copy_data parameter controls data copying behavior.
+    
+    When copy_data=True (default), modifying original arrays should not affect plots.
+    When copy_data=False, modifying original arrays should affect plots (memory efficient).
+    """
+    with mpl.rc_context({'lines.copy_data': copy_data}):
+        t = np.arange(0, 6, 2)  # [0, 2, 4]
+        fig, ax = plt.subplots()
+        l, = ax.plot(t, t, ".-")
+        
+        # Store original data for comparison
+        original_x = l.get_xdata().copy()
+        original_y = l.get_ydata().copy()
+        
+        # Modify the original array
+        t[:] = range(3)  # [0, 1, 2]
+        
+        # Trigger cache invalidation to ensure changes are reflected
+        l.set_drawstyle("steps")
+        
+        if copy_data:
+            # With copy_data=True, plot should be unaffected by array modification
+            np.testing.assert_array_equal(l.get_xdata(), original_x)
+            np.testing.assert_array_equal(l.get_ydata(), original_y)
+        else:
+            # With copy_data=False, plot should reflect the modified array
+            np.testing.assert_array_equal(l.get_xdata(), [0, 1, 2])
+            np.testing.assert_array_equal(l.get_ydata(), [0, 1, 2])
+        
+        plt.close(fig)
+
+
+def test_set_data_copy_behavior():
+    """Test set_xdata and set_ydata respect lines.copy_data parameter."""
+    
+    # Test with copy_data=True (default, safe behavior)
+    with mpl.rc_context({'lines.copy_data': True}):
+        fig, ax = plt.subplots()
+        line, = ax.plot([1, 2, 3], [1, 2, 3])
+        
+        new_x = np.array([4, 5, 6])
+        new_y = np.array([7, 8, 9])
+        
+        line.set_xdata(new_x)
+        line.set_ydata(new_y)
+        
+        # Modify original arrays - should not affect plot
+        new_x[0] = 999
+        new_y[0] = 888
+        
+        # Plot data should be unchanged (copied)
+        assert line.get_xdata()[0] != 999
+        assert line.get_ydata()[0] != 888
+        
+        plt.close(fig)
+    
+    # Test with copy_data=False (memory efficient behavior)
+    with mpl.rc_context({'lines.copy_data': False}):
+        fig, ax = plt.subplots()
+        line, = ax.plot([1, 2, 3], [1, 2, 3])
+        
+        new_x = np.array([4, 5, 6])
+        new_y = np.array([7, 8, 9])
+        
+        line.set_xdata(new_x)
+        line.set_ydata(new_y)
+        
+        # Modify original arrays - should affect plot
+        new_x[0] = 999
+        new_y[0] = 888
+        
+        # Force recache to see changes
+        line.recache()
+        
+        # Plot data should reflect changes (not copied)
+        assert line.get_xdata()[0] == 999
+        assert line.get_ydata()[0] == 888
+        
+        plt.close(fig)
+
+
 @check_figures_equal()
 def test_markevery_prop_cycle(fig_test, fig_ref):
     """Test that we can set markevery prop_cycle."""

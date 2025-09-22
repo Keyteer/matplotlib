@@ -1289,7 +1289,16 @@ class Line2D(Artist):
         """
         if not np.iterable(x):
             raise RuntimeError('x must be a sequence')
-        self._xorig = copy.copy(x)
+        
+        # Conditionally copy the data based on rcParam
+        if mpl.rcParams['lines.copy_data']:
+            self._xorig = copy.copy(x)
+        else:
+            # WARNING: When copy_data is False, modifying the original array
+            # will affect the plot. This is memory efficient but can lead to
+            # unexpected behavior if the original data is modified.
+            self._xorig = x
+        
         self._invalidx = True
         self.stale = True
 
@@ -1308,7 +1317,16 @@ class Line2D(Artist):
         """
         if not np.iterable(y):
             raise RuntimeError('y must be a sequence')
-        self._yorig = copy.copy(y)
+        
+        # Conditionally copy the data based on rcParam
+        if mpl.rcParams['lines.copy_data']:
+            self._yorig = copy.copy(y)
+        else:
+            # WARNING: When copy_data is False, modifying the original array
+            # will affect the plot. This is memory efficient but can lead to
+            # unexpected behavior if the original data is modified.
+            self._yorig = y
+        
         self._invalidy = True
         self.stale = True
 

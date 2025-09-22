@@ -126,6 +126,8 @@
 #lines.solid_joinstyle: round       # {miter, round, bevel}
 #lines.solid_capstyle:  projecting  # {butt, round, projecting}
 #lines.antialiased: True            # render lines in antialiased (no jaggies)
+#lines.copy_data: True              # copy input data arrays to avoid mutation issues
+                                  # (set to False for memory efficiency with large datasets)
 
 ## The three standard dash patterns.  These are scaled by the linewidth.
 #lines.dashed_pattern: 3.7, 1.6

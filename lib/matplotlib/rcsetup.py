@@ -948,6 +948,7 @@ _validators = {
     "lines.antialiased":     validate_bool,  # antialiased (no jaggies)
     "lines.dash_joinstyle":  JoinStyle,
     "lines.solid_joinstyle": JoinStyle,
+    "lines.copy_data":       validate_bool,  # copy input data arrays (True=safe, False=memory efficient)
     "lines.dash_capstyle":   CapStyle,
     "lines.solid_capstyle":  CapStyle,
     "lines.dashed_pattern":  validate_floatlist,
