@@ -683,7 +683,10 @@ class Line2D(Artist):
         else:
             y = self._y
 
-        self._xy = np.column_stack(np.broadcast_arrays(x, y)).astype(float)
+        if mpl.rcParams['lines.copy_data']:
+            self._xy = np.column_stack(np.broadcast_arrays(x, y)).astype(float)
+        else:
+            self._xy = np.column_stack(np.broadcast_arrays(x, y)).astype(float, copy=False)
         self._x, self._y = self._xy.T  # views
 
         self._subslice = False
