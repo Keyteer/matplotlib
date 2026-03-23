@@ -653,7 +653,9 @@ class Line2D(Artist):
 
         Parameters
         ----------
-        *args : (2, N) array or two 1D arrays
+        *args : (N, 2) array or (2, N) array or two 1D arrays
+            If a single (N, 2) array is passed with lines.copy_data=False,
+            the data will be used directly without copying.
 
         See Also
         --------
@@ -661,7 +663,15 @@ class Line2D(Artist):
         set_ydata
         """
         if len(args) == 1:
-            (x, y), = args
+            arg = args[0]
+            # Check if it's (N, 2) array - preferred for no-copy mode
+            if isinstance(arg, np.ndarray) and arg.ndim == 2 and arg.shape[1] == 2:
+                # (N, 2) format: use directly in no-copy mode
+                x = arg
+                y = np.array([])  # Empty y signals to recache to use x as-is
+            else:
+                # Legacy (2, N) format or other iterable
+                (x, y), = args
         else:
             x, y = args
 
@@ -673,8 +683,8 @@ class Line2D(Artist):
 
     def recache(self, always=False):
         if always or self._invalidx:
-            xconv = self.convert_xunits(self._xorig)
-            x = _to_unmasked_float_array(xconv).ravel()
+            xconv = self.convert_xunits(self._xorig)             # for TIdx (timestamp)  <----------------------------- 50
+            x = _to_unmasked_float_array(xconv).ravel()          # for Idx <---------------------------------- 50
         else:
             x = self._x
         if always or self._invalidy:
@@ -686,7 +696,19 @@ class Line2D(Artist):
         if mpl.rcParams['lines.copy_data']:
             self._xy = np.column_stack(np.broadcast_arrays(x, y)).astype(float)
         else:
-            self._xy = np.column_stack(np.broadcast_arrays(x, y)).astype(float, copy=False)
+            # Check if x is already (N, 2) array with float64 dtype
+            # This avoids duplication when user passes pre-formatted data
+            if (isinstance(x, np.ndarray) and x.ndim == 2 and x.shape[1] == 2 
+                    and x.dtype == np.float64 and len(y) == 0):
+                # x is already (N, 2) float64, use directly
+                self._xy = x
+            else:
+                # Need to stack separate x, y arrays
+                self._xy = np.column_stack(np.broadcast_arrays(x, y))
+                # Only convert if needed
+                if self._xy.dtype.kind != 'f' or self._xy.dtype.itemsize != 8:
+                    self._xy = self._xy.astype(np.float64, copy=False)
+
         self._x, self._y = self._xy.T  # views
 
         self._subslice = False
@@ -713,7 +735,7 @@ class Line2D(Artist):
         else:
             interpolation_steps = 1
         xy = STEP_LOOKUP_MAP[self._drawstyle](*self._xy.T)
-        self._path = Path(np.asarray(xy).T,
+        self._path = Path(np.asarray(xy).T,                       # <--------------------------------------- 100
                           _interpolation_steps=interpolation_steps)
         self._transformed_path = None
         self._invalidx = False
